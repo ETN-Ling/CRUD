@@ -154,4 +154,76 @@ public class AgendaDB {
         System.out.println("Error al modificar teléfonos: " + e.getMessage());
         }
     }
+    
+    public static boolean modificarPersonaCompleta(int id, String nuevoNombre, String nuevaDireccion, List<String> nuevosTelefonos) {
+        try (Connection conn = DriverManager.getConnection(URL, USER, PASSWORD)) {
+            conn.setAutoCommit(false);
+
+            // Actualizar Personas
+            String sqlPers = "UPDATE Personas SET nombre = ?, direccion = ? WHERE id = ?";
+            try (PreparedStatement stmtPers = conn.prepareStatement(sqlPers)) {
+                stmtPers.setString(1, nuevoNombre);
+                stmtPers.setString(2, nuevaDireccion);
+                stmtPers.setInt(3, id);
+                stmtPers.executeUpdate();
+            }
+
+            // Reemplazar teléfonos
+            String sqlDelTel = "DELETE FROM Telefonos WHERE personaId = ?";
+            try (PreparedStatement stmtDel = conn.prepareStatement(sqlDelTel)) {
+                stmtDel.setInt(1, id);
+                stmtDel.executeUpdate();
+            }
+
+            String sqlInsTel = "INSERT INTO Telefonos (personaId, telefono) VALUES (?, ?)";
+            try (PreparedStatement stmtIns = conn.prepareStatement(sqlInsTel)) {
+                for (String tel : nuevosTelefonos) {
+                    stmtIns.setInt(1, id);
+                    stmtIns.setString(2, tel);
+                    stmtIns.addBatch();
+                }
+                stmtIns.executeBatch();
+            }
+
+            conn.commit();
+            return true;
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+    
+    public static Persona obtenerPersona(int id) {
+       Persona persona = null;
+        String sqlPersona = "SELECT nombre, direccion FROM Personas WHERE id = ?";
+        String sqlTelefonos = "SELECT telefono FROM Telefonos WHERE personaId = ?";
+
+        try (Connection conn = DriverManager.getConnection(URL, USER, PASSWORD);
+             PreparedStatement psPers = conn.prepareStatement(sqlPersona)) {
+
+            psPers.setInt(1, id);
+            try (ResultSet rs = psPers.executeQuery()) {
+                if (rs.next()) {
+                    String nombre = rs.getString("nombre");
+                    String direccion = rs.getString("direccion");
+
+                    List<String> telefonos = new ArrayList<>();
+                    try (PreparedStatement psTel = conn.prepareStatement(sqlTelefonos)) {
+                        psTel.setInt(1, id);
+                        try (ResultSet rsTel = psTel.executeQuery()) {
+                            while (rsTel.next()) {
+                                telefonos.add(rsTel.getString("telefono"));
+                            }
+                        }
+                    }
+                    
+                    persona = new Persona(id, nombre, direccion, telefonos);
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+        return persona;
+    }
 }
