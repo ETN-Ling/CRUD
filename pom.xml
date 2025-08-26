@@ -57,7 +57,8 @@
                 </configuration>
                 <executions>
                     <execution>
-                        <id>default-cli</id>
+                        <id>run-javafx</id>
+                        <phase>none</phase>
                         <goals>
                             <goal>run</goal>
                         </goals>

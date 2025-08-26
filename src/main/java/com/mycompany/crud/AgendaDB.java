@@ -1,7 +1,7 @@
 package com.mycompany.crud;
 
 import java.sql.*;
-import java.util.List;
+import java.util.*;
 
 public class AgendaDB {
     // Datos de conexión a la base de datos
@@ -9,98 +9,106 @@ public class AgendaDB {
     private static final String USER = "usuario1";
     private static final String PASSWORD = "superpassword";
 
-    public static void mostrarPersonas() {
+    public static List<Persona> obtenerPersonas() {
+        List<Persona> personas = new ArrayList<>();
+
+        String queryPersonas = "SELECT id, nombre, direccion FROM Personas";
+        String queryTelefonos = "SELECT telefono FROM Telefonos WHERE personaId = ?";
+
         try (Connection conn = DriverManager.getConnection(URL, USER, PASSWORD);
-             Statement stmt = conn.createStatement();
-             ResultSet rs = stmt.executeQuery("SELECT * FROM Personas")) {
+             PreparedStatement psPersonas = conn.prepareStatement(queryPersonas);
+             ResultSet rsPersonas = psPersonas.executeQuery()) {
 
-            System.out.println("\n=== LISTADO DE PERSONAS ===");
-            while (rs.next()) {
-                int id = rs.getInt("id");
-                String nombre = rs.getString("nombre");
-                String direccion = rs.getString("direccion");
+            while (rsPersonas.next()) {
+                int id = rsPersonas.getInt("id");
+                String nombre = rsPersonas.getString("nombre");
+                String direccion = rsPersonas.getString("direccion");
 
-                System.out.println("ID: " + id + ", Nombre: " + nombre + ", Dirección: " + direccion);
-
-                try (Statement telStmt = conn.createStatement();
-                     ResultSet rsTel = telStmt.executeQuery(
-                             "SELECT telefono FROM Telefonos WHERE personaId = " + id)) {
-
-                    System.out.println("  Teléfonos:");
-                    while (rsTel.next()) {
-                        System.out.println("    - " + rsTel.getString("telefono"));
+                List<String> telefonos = new ArrayList<>();
+                try (PreparedStatement psTel = conn.prepareStatement(queryTelefonos)) {
+                    psTel.setInt(1, id);
+                    try (ResultSet rsTel = psTel.executeQuery()) {
+                        while (rsTel.next()) {
+                            telefonos.add(rsTel.getString("telefono"));
+                        }
                     }
                 }
+
+                Persona persona = new Persona(id, nombre, direccion, telefonos);
+                personas.add(persona);
             }
+
         } catch (SQLException e) {
-            System.out.println("Error al consultar personas: " + e.getMessage());
+            e.printStackTrace();
         }
+
+        return personas;
     }
 
-    public static void insertarPersona(String nombre, String direccion, List<String> telefonos) {
-    try (Connection conn = DriverManager.getConnection(URL, USER, PASSWORD)) {
-        conn.setAutoCommit(false);
+    public static void insertarPersona(String nombre, List<String> direcciones, List<String> telefonos) {
+        // Unimos todas las direcciones como una sola cadena separada por comas
+        String direccionUnida = String.join(", ", direcciones);
 
-        String sqlPersona = "INSERT INTO Personas (nombre, direccion) VALUES (?, ?)";
-        try (PreparedStatement stmt = conn.prepareStatement(sqlPersona, Statement.RETURN_GENERATED_KEYS)) {
-            stmt.setString(1, nombre);
-            stmt.setString(2, direccion);
-            int filas = stmt.executeUpdate();
-
-            if (filas == 0) {
-                conn.rollback();
-                System.out.println("No se pudo insertar la persona.");
-                return;
-            }
-
-            ResultSet rs = stmt.getGeneratedKeys();
-            int personaId = -1;
-            if (rs.next()) {
-                personaId = rs.getInt(1);
-            } else {
-                conn.rollback();
-                System.out.println("No se pudo obtener el ID de la persona insertada.");
-                return;
-            }
-
-            String sqlTelefono = "INSERT INTO Telefonos (personaId, telefono) VALUES (?, ?)";
-            try (PreparedStatement stmtTel = conn.prepareStatement(sqlTelefono)) {
-                for (String tel : telefonos) {
-                    stmtTel.setInt(1, personaId);
-                    stmtTel.setString(2, tel);
-                    stmtTel.addBatch();
-                }
-                stmtTel.executeBatch();
-            }
-            conn.commit();
-            System.out.println("Persona y teléfonos insertados correctamente.");
-        } catch (SQLException e) {
-            conn.rollback();
-            throw e;
-        } finally {
-            conn.setAutoCommit(true);
-        }
-    } catch (SQLException e) {
-        System.out.println("Error al insertar persona y teléfonos: " + e.getMessage());
-    }
-}
-
-    public static void eliminarPersona(int id) {
         try (Connection conn = DriverManager.getConnection(URL, USER, PASSWORD)) {
-            String sqlTelefonos = "DELETE FROM Telefonos WHERE personaId = ?";
-            try (PreparedStatement stmtTel = conn.prepareStatement(sqlTelefonos)) {
-                stmtTel.setInt(1, id);
-                stmtTel.executeUpdate();
-            }
+            conn.setAutoCommit(false);
 
-            String sqlPersona = "DELETE FROM Personas WHERE id = ?";
-            try (PreparedStatement stmtPers = conn.prepareStatement(sqlPersona)) {
-                stmtPers.setInt(1, id);
-                int filas = stmtPers.executeUpdate();
-                System.out.println(filas > 0 ? "Persona eliminada." : "No se encontró la persona.");
+            String sqlPersona = "INSERT INTO Personas (nombre, direccion) VALUES (?, ?)";
+            try (PreparedStatement stmt = conn.prepareStatement(sqlPersona, Statement.RETURN_GENERATED_KEYS)) {
+                stmt.setString(1, nombre);
+                stmt.setString(2, direccionUnida);
+                int filas = stmt.executeUpdate();
+
+                if (filas == 0) {
+                    conn.rollback();
+                    System.out.println("No se pudo insertar la persona.");
+                    return;
+                }
+
+                ResultSet rs = stmt.getGeneratedKeys();
+                int personaId = -1;
+                if (rs.next()) {
+                    personaId = rs.getInt(1);
+                } else {
+                    conn.rollback();
+                    System.out.println("No se pudo obtener el ID de la persona insertada.");
+                    return;
+                }
+
+                String sqlTelefono = "INSERT INTO Telefonos (personaId, telefono) VALUES (?, ?)";
+                try (PreparedStatement stmtTel = conn.prepareStatement(sqlTelefono)) {
+                    for (String tel : telefonos) {
+                        if (tel.trim().isEmpty()) continue;
+                        stmtTel.setInt(1, personaId);
+                        stmtTel.setString(2, tel);
+                        stmtTel.addBatch();
+                    }
+                    stmtTel.executeBatch();
+                }
+
+                conn.commit();
+                System.out.println("Persona y teléfonos insertados correctamente.");
+            } catch (SQLException e) {
+                conn.rollback();
+                throw e;
+            } finally {
+                conn.setAutoCommit(true);
+            }
+        } catch (SQLException e) {
+            System.out.println("Error al insertar persona y teléfonos: " + e.getMessage());
+        }
+    }   
+
+    public static boolean eliminarPersona(int id) {
+        try (Connection conn = DriverManager.getConnection(URL, USER, PASSWORD)) {
+            String sql = "DELETE FROM Personas WHERE id = ?";
+            try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+                stmt.setInt(1, id);
+                int filas = stmt.executeUpdate();
+                return filas > 0;
             }
         } catch (SQLException e) {
             System.out.println("Error al eliminar: " + e.getMessage());
+            return false;
         }
     }
 

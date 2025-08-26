@@ -20,14 +20,20 @@ public class CRUD {
 
             switch (opcion) {
                 case "1":
-                    AgendaDB.mostrarPersonas();
+                    AgendaDB.obtenerPersonas();
                     break;
 
                 case "2":
                     System.out.print("Nombre: ");
                     String nombre = sc.nextLine();
+                    ArrayList<String> direcciones = new ArrayList<>();
                     System.out.print("Dirección: ");
-                    String direccion = sc.nextLine();
+                    while (true) {
+                    System.out.print("Agregar dirección (enter para terminar): ");
+                    String dir = sc.nextLine();
+                    if (dir.isEmpty()) break;
+                    direcciones.add(dir);
+                    }
                     ArrayList<String> telefonos = new ArrayList<>();
                     while (true) {
                     System.out.print("Agregar teléfono (enter para terminar): ");
@@ -36,7 +42,7 @@ public class CRUD {
                     telefonos.add(tel);
                     }
 
-                    AgendaDB.insertarPersona(nombre, direccion,telefonos);
+                    AgendaDB.insertarPersona(nombre, direcciones,telefonos);
                     break;
 
                 case "3":

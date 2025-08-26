@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<actions>
+        <action>
+            <actionName>CUSTOM-JavaFX</actionName>
+            <displayName>JavaFX</displayName>
+            <recursive>false</recursive>
+            <goals>
+                <goal>javafx:run</goal>
+            </goals>
+        </action>
+        <action>
+            <actionName>CUSTOM-Run with javafx:run</actionName>
+            <displayName>Run with javafx:run</displayName>
+            <goals>
+                <goal>javafx:run</goal>
+            </goals>
+        </action>
+    </actions>
