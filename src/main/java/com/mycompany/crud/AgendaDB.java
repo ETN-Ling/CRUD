@@ -46,7 +46,6 @@ public class AgendaDB {
     }
 
     public static void insertarPersona(String nombre, List<String> direcciones, List<String> telefonos) {
-        // Unimos todas las direcciones como una sola cadena separada por comas
         String direccionUnida = String.join(", ", direcciones);
 
         try (Connection conn = DriverManager.getConnection(URL, USER, PASSWORD)) {
@@ -159,7 +158,6 @@ public class AgendaDB {
         try (Connection conn = DriverManager.getConnection(URL, USER, PASSWORD)) {
             conn.setAutoCommit(false);
 
-            // Actualizar Personas
             String sqlPers = "UPDATE Personas SET nombre = ?, direccion = ? WHERE id = ?";
             try (PreparedStatement stmtPers = conn.prepareStatement(sqlPers)) {
                 stmtPers.setString(1, nuevoNombre);
@@ -168,7 +166,6 @@ public class AgendaDB {
                 stmtPers.executeUpdate();
             }
 
-            // Reemplazar teléfonos
             String sqlDelTel = "DELETE FROM Telefonos WHERE personaId = ?";
             try (PreparedStatement stmtDel = conn.prepareStatement(sqlDelTel)) {
                 stmtDel.setInt(1, id);

@@ -51,9 +51,7 @@ public class Interfaz extends Application {
         menuBox.getChildren().addAll(lbl, btnListar, btnInsertar, btnEliminar, btnModificar, btnSalir);
         root.setLeft(menuBox);
     }
-
     // ------------------- FORMULARIOS -------------------
-
     private void mostrarListar() {
         VBox box = new VBox(10);
         box.setPadding(new Insets(20));
@@ -80,7 +78,6 @@ public class Interfaz extends Application {
 
         table.getColumns().addAll(colId, colNombre, colDireccion, colTelefonos);
 
-        // Cargar datos desde AgendaDB
         List<Persona> personas = AgendaDB.obtenerPersonas();
         table.getItems().addAll(personas);
 
@@ -99,14 +96,12 @@ public class Interfaz extends Application {
         TextField txtNombre = new TextField();
         txtNombre.setPromptText("Nombre");
 
-        // varias direcciones
         VBox direccionesBox = new VBox(5);
         agregarCampoDireccion(direccionesBox);
 
         Button btnAgregarDir = new Button("Agregar dirección");
         btnAgregarDir.setOnAction(e -> agregarCampoDireccion(direccionesBox));
 
-        // varios teléfonos
         VBox telefonosBox = new VBox(5);
         agregarCampoTelefono(telefonosBox);
 
@@ -189,7 +184,6 @@ public class Interfaz extends Application {
             try {
                 int id = Integer.parseInt(input);
 
-                // Confirmación (opcional)
                 Alert confirm = new Alert(Alert.AlertType.CONFIRMATION);
                 confirm.setTitle("Confirmar eliminación");
                 confirm.setHeaderText(null);
@@ -350,8 +344,6 @@ public class Interfaz extends Application {
                 new Label("¿Qué desea modificar?"), opciones);
         contentPane.getChildren().setAll(box);
     }
-
-    // ------------------- HELPERS -------------------
 
     private void agregarCampoDireccion(VBox direccionesBox) {
         TextField campo = new TextField();
